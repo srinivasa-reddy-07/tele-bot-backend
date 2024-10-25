@@ -8,25 +8,31 @@ app.use(bodyParser.json());
 
 // Telegram Bot setup
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+const webhookUrl = process.env.VERCEL_URL + '/webhook'; // Replace with your Vercel URL
 
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Welcome to the bot! Click the button to open the web app', {
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: "Open Web App", web_app: { url: "https://thewhiteshark.io" } }]
-            ]
-        }
+const bot = new TelegramBot(token, { webhookUrl });
+
+// Set up webhook
+bot.setWebHook(webhookUrl)
+  .then(() => console.log('Webhook set up'))
+  .catch((error) => console.error('Webhook setup failed:', error));
+
+// Webhook handler
+app.post('/webhook', (req, res) => {
+  bot.processUpdate(req.body)
+    .then(() => res.sendStatus(200))
+    .catch((error) => {
+      console.error('Error processing update:', error);
+      res.sendStatus(500);
     });
 });
 
-// Example route
+// Example route (optional, for testing)
 app.get('/', (req, res) => {
-    res.send('Hello from the backend!');
+  res.send('Hello from the backend!');
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
